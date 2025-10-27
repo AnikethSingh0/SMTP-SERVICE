@@ -1,21 +1,23 @@
 const express = require("express");
-const { PORT } = require('./config/index')
-const sendMail = require('./service/mail-service')
-const cron = require('node-cron')
-
+const { PORT, REMINDER_BINDING_KEY } = require("./config/index");
+const route = require("./routes/index.js");
+const startCronJob = require("./utils/job.js");
+const {createChannel,subscribeMessage} = require('./utils/message-queue.js')
+const EmailService =require('./service/mail-service.js')
 const app = express();
 
 const startServer = async () => {
-    //console.log("sending mail...")
-    //sendMail();
-    //console.log("sent")
-    
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
+  app.use("/api", route);
+  const channel = await createChannel();
+  subscribeMessage(channel,REMINDER_BINDING_KEY,EmailService.dummyService);
+  // start cron job here
+  //startCronJob();
 
-    app.use(express.json())
-    app.use(express.urlencoded({extended:true}))
-    app.listen(PORT,() => {
-        console.log(`${PORT} is starting`);
-    });
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
 };
 
 startServer();
